@@ -1,4 +1,4 @@
-# RAG-with-Atomic-Agents
+# RAG-using-Atomic-Agents
 This example shows how to use the AI agent framework Atomic Agents to build an interactive Retrieval-Augmented Generation (RAG) system in Python. It loads a predefined set of PDFs, indexes their content using FAISS and SentenceTransformer, and answers user questions based on the given PDFs through the language model Mistral.
 
 - Semantic retrieval over PDF documents using FAISS
