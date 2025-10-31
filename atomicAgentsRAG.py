@@ -10,8 +10,6 @@ from atomic_agents import AtomicAgent, AgentConfig, BaseIOSchema
 from atomic_agents.context import SystemPromptGenerator
 import os
 
-### PDF Loading & Chunking ###
-
 def load_pdfs(pdf_paths: List[str]) -> Dict[str, List[str]]:
     """
     Loads text content from a list of PDF files.
@@ -36,7 +34,6 @@ def load_pdfs(pdf_paths: List[str]) -> Dict[str, List[str]]:
         except Exception as e:
             print(f"[ERROR] Failed to load PDF {path}: {e}")
     return pdf_texts
-
 
 def chunk_texts(pdf_texts: Dict[str, List[str]], chunk_size: int = 500) -> Dict[str, List[str]]:
     """
@@ -63,7 +60,6 @@ def chunk_texts(pdf_texts: Dict[str, List[str]], chunk_size: int = 500) -> Dict[
 
 
 ### Embedding Engine with FAISS ###
-
 class EmbeddingEngine:
     """
     Handles embedding creation and similarity search using FAISS.
@@ -125,7 +121,6 @@ class EmbeddingEngine:
 
 
 ### Pydantic Schemas ###
-
 class RetrieveInput(BaseIOSchema):
     """Input schema for the Retrieval Agent."""
     query: str = Field(..., description="User query")
@@ -149,7 +144,6 @@ class AnswerOutput(BaseIOSchema):
 
 
 ### System Prompt ###
-
 system_prompt_generator = SystemPromptGenerator(
     background=["Medical RAG assistant specialized in clinical guidelines."],
     steps=[
@@ -161,14 +155,14 @@ system_prompt_generator = SystemPromptGenerator(
     ]
 )
 
-### Mistral Client ###
 
+### Mistral Client ###
 MISTRAL_API_KEY = "your-key-here" 
 mistral_raw = Mistral(api_key=MISTRAL_API_KEY)
 mistral_client = from_mistral(mistral_raw)
 
-### Agents ###
 
+### Agents ###
 class RetrieveAgent(AtomicAgent[RetrieveInput, RetrieveOutput]):
     def __init__(self, *, config: AgentConfig, embedding_engine: EmbeddingEngine, **kwargs):
         super().__init__(config=config, **kwargs)
@@ -177,7 +171,6 @@ class RetrieveAgent(AtomicAgent[RetrieveInput, RetrieveOutput]):
     def run(self, inputs: RetrieveInput) -> RetrieveOutput:
         chunks = self.embedding_engine.retrieve(inputs.query)
         return RetrieveOutput(retrieved_chunks=chunks)
-
 
 class AnsweringAgent(AtomicAgent[AnswerInput, AnswerOutput]):
     """Agent that answers user questions based on retrieved document chunks."""
@@ -220,9 +213,7 @@ class AnsweringAgent(AtomicAgent[AnswerInput, AnswerOutput]):
         return response
 
 
-
 ### Load documents, initialize agents and create the q&a loop in the main ###
-
 if __name__ == "__main__":
     pdf_files = [
         "knowledge/leitlinie_atemwegsmanagement.pdf",
