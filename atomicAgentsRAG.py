@@ -136,14 +136,15 @@ class RetrieveOutput(BaseIOSchema):
     retrieved_chunks: List[Dict[str, str]] = Field(..., description="List of retrieved chunks and sources")
 
 
-class SummarizeInput(BaseIOSchema):
-    """Input schema for the Summarization Agent."""
+class AnswerInput(BaseIOSchema):
+    """Input schema for the Answering Agent."""
+    query: str = Field(..., description="User question")
     retrieved_chunks: List[Dict[str, str]] = Field(..., description="List of retrieved text chunks")
 
 
-class SummarizeOutput(BaseIOSchema):
-    """Output schema for the Summarization Agent."""
-    summary: str = Field(..., description="Generated summary")
+class AnswerOutput(BaseIOSchema):
+    """Output schema for the Answering Agent."""
+    answer: str = Field(..., description="Generated answer")
     sources: Set[str] = Field(..., description="Set of PDF filenames used as sources")
 
 
@@ -178,28 +179,36 @@ class RetrieveAgent(AtomicAgent[RetrieveInput, RetrieveOutput]):
         return RetrieveOutput(retrieved_chunks=chunks)
 
 
-class SummarizeAgent(AtomicAgent[SummarizeInput, SummarizeOutput]):
-    """Summarization agent using a language model to create a summary."""
+class AnsweringAgent(AtomicAgent[AnswerInput, AnswerOutput]):
+    """Agent that answers user questions based on retrieved document chunks."""
+
     def __init__(self, *, config: AgentConfig, **kwargs):
         super().__init__(config=config, **kwargs)
         self.config = config
 
-    def run(self, inputs: SummarizeInput) -> SummarizeOutput:
+    def run(self, inputs: AnswerInput) -> AnswerOutput:
         system_prompt = self.config.system_prompt_generator.generate_prompt()
 
         if not inputs.retrieved_chunks:
-            return SummarizeOutput(summary="No relevant information found.", sources=set())
+            return AnswerOutput(answer="No relevant information found.", sources=set())
 
-        chunks_text = "\n---\n".join(chunk["text"] for chunk in inputs.retrieved_chunks)
+        chunks_text = "\n---\n".join(
+            f"[Source: {chunk['source']}]\n{chunk['text']}"
+            for chunk in inputs.retrieved_chunks
+        )
+
         prompt = (
-            "The following text chunks come from medical guidelines. "
-            "Create a concise summary that answers the question using only these chunks:\n\n"
+            f"The user asked the following question:\n\n"
+            f"**{inputs.query}**\n\n"
+            "Here are the most relevant text excerpts from medical guidelines.\n"
+            "Use only this information to answer the question accurately.\n"
+            "If the answer cannot be found, state that explicitly.\n\n"
             f"{chunks_text}"
         )
 
         response = self.config.client.chat.completions.create(
             model=self.config.model,
-            response_model=SummarizeOutput,
+            response_model=AnswerOutput,
             messages=[
                 {"role": "system", "content": system_prompt},
                 {"role": "user", "content": prompt}
@@ -209,6 +218,7 @@ class SummarizeAgent(AtomicAgent[SummarizeInput, SummarizeOutput]):
         sources = {chunk["source"] for chunk in inputs.retrieved_chunks}
         response.sources = sources
         return response
+
 
 
 ### Load documents, initialize agents and create the q&a loop in the main ###
@@ -235,7 +245,7 @@ if __name__ == "__main__":
         )
 
         retrieve_agent = RetrieveAgent(config=agent_config, embedding_engine=embedding_engine)
-        summarize_agent = SummarizeAgent(config=agent_config)
+        answer_agent = AnsweringAgent(config=agent_config)
 
         print("\n[READY] The system is ready for questions. Type 'exit' to quit.\n")
 
@@ -246,13 +256,13 @@ if __name__ == "__main__":
                 break
 
             retrieved = retrieve_agent.run(RetrieveInput(query=question))
-            summary = summarize_agent.run(SummarizeInput(retrieved_chunks=retrieved.retrieved_chunks))
-
+            answer = answer_agent.run(AnswerInput(query=question, retrieved_chunks=retrieved.retrieved_chunks))
+            
             print("\n" + "=" * 60)
-            print("Summary:")
-            print(summary.summary)
+            print("Answer:")
+            print(answer.answer)
             print("\nSources:")
-            for src in summary.sources:
+            for src in answer.sources:
                 print(f"- {src}")
             print("=" * 60 + "\n")
 
