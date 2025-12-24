@@ -157,7 +157,7 @@ system_prompt_generator = SystemPromptGenerator(
 
 
 ### Mistral Client ###
-MISTRAL_API_KEY = "your-key-here" 
+MISTRAL_API_KEY = "xxxxxxxxxx" 
 mistral_raw = Mistral(api_key=MISTRAL_API_KEY)
 mistral_client = from_mistral(mistral_raw)
 
