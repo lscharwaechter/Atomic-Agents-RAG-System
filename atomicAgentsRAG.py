@@ -157,13 +157,10 @@ system_prompt_generator = SystemPromptGenerator(
     ]
 )
 
-
 ### Mistral Client ###
 MISTRAL_API_KEY = os.getenv("MISTRAL_API_KEY")
 mistral_raw = Mistral(api_key=MISTRAL_API_KEY)
 mistral_client = from_mistral(mistral_raw)
-
-
 
 ### Agents ###
 class RetrieveAgent(AtomicAgent[RetrieveInput, RetrieveOutput]):
@@ -262,3 +259,4 @@ if __name__ == "__main__":
 
     except Exception as e:
         print(f"[FATAL] An unexpected error occurred: {e}")
+
