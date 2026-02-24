@@ -13,4 +13,4 @@ Atomic Agents enables to define transparent communication between the agents usi
 - v2 includes instant references to the pages of the used chunks within the answer text. Furthermore, a ranking score of the retrieved chunks is implemented based on a simple heuristic of the embedding dinstance. Higher distances refer to a lower relevance score. The top-k(k=1) relevance score and the mean relevance score are appended to the answer.
 
 ## Pipeline
-User Question &rarr; [RetrieveAgent] Finds relevant PDF text chunks using FAISS &rarr; [AnswerAgent] Uses Mistral to summarize and answer based on retrieved chunks &rarr; Final Answer + Sources 
+User Question &rarr; [RetrieveAgent] Finds relevant PDF text chunks using FAISS &rarr; [AnswerAgent] Uses Mistral to summarize and answer based on retrieved chunks &rarr; Final Answer + Sources + Relevance Scores
