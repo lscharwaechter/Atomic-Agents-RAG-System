@@ -12,15 +12,13 @@ import os
 from atomic_agents import AtomicAgent, AgentConfig, BaseIOSchema
 from atomic_agents.context import SystemPromptGenerator
 
-
-
 class TextChunk(BaseIOSchema):
     """A text chunk from a PDF including source metadata (file & page number)."""
     text: str = Field(..., description="Chunk text")
     source_pdf: str = Field(..., description="PDF filename or path")
     page: int = Field(..., description="1-based page number in the PDF")
 
-# PDF Loading & Chunking
+### PDF Loading & Chunking ###
 def load_pdfs_with_pages(pdf_paths: List[str]) -> List[TextChunk]:
     """
     Loads PDFs and returns page-level TextChunks (not yet chunked),
@@ -69,7 +67,7 @@ def relevance_bucket(score: float) -> str:
         return "medium"
     return "rather irrelevant"
 
-# Embedding Engine with FAISS 
+### Embedding Engine with FAISS ###
 class EmbeddingEngine:
     def __init__(self, model_name="all-MiniLM-L6-v2"):
         self.embedder = SentenceTransformer(model_name)
@@ -113,7 +111,7 @@ class EmbeddingEngine:
             results.append((self.chunks[int(idx)], sim))
         return results
 
-# Pydantic Schemas
+### Pydantic Schemas ###
 class RetrieveInput(BaseIOSchema):
     """Input schema for the retrieval agent. Contains the user's search query."""
     query: str = Field(..., description="Search query")
@@ -141,7 +139,7 @@ class AnswerOutput(BaseIOSchema):
     """Output schema for the answering agent. Contains the final answer including source list."""
     summary: str = Field(..., description="Generated answer")
 
-# System Prompt
+### System Prompt ###
 system_prompt_generator = SystemPromptGenerator(
     background=["Medical RAG assistant specialized in clinical guidelines."],
     steps=[
@@ -155,12 +153,12 @@ system_prompt_generator = SystemPromptGenerator(
     ]
 )
 
-# Mistral Client & Instructor Wrapper
+### Mistral Client & Instructor Wrapper ###
 MISTRAL_API_KEY = os.getenv("MISTRAL_API_KEY")
 mistral_raw = Mistral(api_key=MISTRAL_API_KEY)
 mistral_client = from_mistral(mistral_raw)
 
-# Helper Functions for Source Mapping
+### Helper Functions for Source Mapping ###
 def build_q_mapping(chunks: List[TextChunk]) -> Tuple[Dict[str, str], List[str]]:
     """
     Creates a stable mapping per answer: source_pdf -> Q1..Qn (order of appearance).
@@ -189,7 +187,7 @@ def format_context_for_llm(chunks: List[TextChunk], qmap: Dict[str, str]) -> str
         formatted.append(f"{header}\n{c.text}")
     return "\n\n---\n\n".join(formatted)
 
-# Agents
+### Agents ###
 class RetrieveAgent(AtomicAgent[RetrieveInput, RetrieveOutput]):
     def __init__(self, *, config: AgentConfig, embedding_engine: EmbeddingEngine, top_k: int = 5, **kwargs):
         super().__init__(config=config, **kwargs)
@@ -316,6 +314,7 @@ class RAGPipeline:
         )
         return summary
 
+### Load documents, initialize agents and answer the question ###
 if __name__ == "__main__":
     pdf_files = [
         "knowledge/leitlinie_atemwegsmanagement.pdf",
@@ -336,3 +335,4 @@ if __name__ == "__main__":
     except Exception as e:
 
         print(f"\n[ERROR] An error occurred: {e}")
+
